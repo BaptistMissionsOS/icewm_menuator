@@ -10,6 +10,8 @@ class EntryEditorWidget extends StatefulWidget {
   final Function(IceMenuEntry)? onMoveUp;
   final Function(IceMenuEntry)? onMoveDown;
   final Function()? onClearSelection;
+  final Function(IceSubMenu)? onMoveToSubmenu;
+  final List<IceSubMenu> availableSubmenus;
 
   const EntryEditorWidget({
     Key? key,
@@ -20,6 +22,8 @@ class EntryEditorWidget extends StatefulWidget {
     this.onMoveUp,
     this.onMoveDown,
     this.onClearSelection,
+    this.onMoveToSubmenu,
+    this.availableSubmenus = const [],
   }) : super(key: key);
 
   @override
@@ -175,10 +179,41 @@ class _EntryEditorWidgetState extends State<EntryEditorWidget> {
                   hintText: 'firefox',
                 ),
               ),
+            const SizedBox(height: 16),
+            if (widget.selectedEntry is IceProgram && widget.availableSubmenus.isNotEmpty)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Directory Options',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<IceSubMenu>(
+                    decoration: const InputDecoration(
+                      labelText: 'Move to Directory',
+                      border: OutlineInputBorder(),
+                      hintText: 'Choose directory',
+                    ),
+                    items: widget.availableSubmenus.map((submenu) {
+                      return DropdownMenuItem<IceSubMenu>(
+                        value: submenu,
+                        child: Text(submenu.label),
+                      );
+                    }).toList(),
+                    onChanged: (IceSubMenu? selectedSubmenu) {
+                      if (selectedSubmenu != null && widget.onMoveToSubmenu != null) {
+                        widget.onMoveToSubmenu!(selectedSubmenu);
+                      }
+                    },
+                  ),
+                ],
+              ),
             const SizedBox(height: 24),
             Wrap(
               spacing: 8,
               runSpacing: 8,
+              alignment: WrapAlignment.start,
               children: [
                 ElevatedButton.icon(
                   onPressed: _saveChanges,
@@ -191,7 +226,6 @@ class _EntryEditorWidgetState extends State<EntryEditorWidget> {
                     icon: const Icon(Icons.clear),
                     label: const Text('Clear Selection'),
                   ),
-                const Spacer(),
                 ElevatedButton.icon(
                   onPressed: () {
                     if (widget.selectedEntry != null) {

@@ -381,6 +381,23 @@ quit
     }
   }
 
+  /// Get all available submenus for moving entries
+  List<IceSubMenu> _getAllSubmenus() {
+    final submenus = <IceSubMenu>[];
+    _collectSubmenusRecursive(_menuEntries, submenus);
+    return submenus;
+  }
+
+  /// Recursively collect all submenus
+  void _collectSubmenusRecursive(List<IceMenuEntry> entries, List<IceSubMenu> submenus) {
+    for (final entry in entries) {
+      if (entry is IceSubMenu) {
+        submenus.add(entry);
+        _collectSubmenusRecursive(entry.children, submenus);
+      }
+    }
+  }
+
   /// Create a backup of the current menu
   Future<void> _createBackup() async {
     try {
@@ -401,6 +418,35 @@ quit
           SnackBar(content: Text('Error creating backup: $e')),
         );
       }
+    }
+  }
+
+  /// Show confirmation dialog for reloading the menu file
+  Future<void> _showReloadConfirmation() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reload Menu File'),
+        content: const Text(
+          'This will reload the menu file from disk, discarding any unsaved changes. '
+          'Are you sure you want to continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            child: const Text('Reload'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      await _loadMenuFile();
     }
   }
 
@@ -768,7 +814,7 @@ quit
           IconButton(
             icon: const Icon(Icons.folder_open),
             tooltip: 'Reload Menu File',
-            onPressed: _loadMenuFile,
+            onPressed: _showReloadConfirmation,
           ),
           IconButton(
             icon: const Icon(Icons.restart_alt),
@@ -895,6 +941,12 @@ quit
                 _selectedEntry = null;
               });
             },
+            onMoveToSubmenu: (IceSubMenu submenu) {
+              if (_selectedEntry != null) {
+                _onEntryDropped(_selectedEntry!, submenu);
+              }
+            },
+            availableSubmenus: _getAllSubmenus(),
           ),
         ),
       ],
