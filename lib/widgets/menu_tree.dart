@@ -74,11 +74,9 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
   
   @override
   Widget build(BuildContext context) {
-    // Filter out invisible entries
-    final visibleEntries = widget.entries.where((entry) => entry.isVisible).toList();
-    
-    debugPrint('MenuTreeWidget building with ${visibleEntries.length} visible entries');
-    for (final entry in visibleEntries) {
+    // Show all entries (both visible and hidden) in the editor
+    debugPrint('MenuTreeWidget building with ${widget.entries.length} total entries');
+    for (final entry in widget.entries) {
       if (entry is IceSubMenu) {
         debugPrint('MenuTreeWidget submenu: ${entry.label} with ${entry.children.length} children');
         for (final child in entry.children) {
@@ -92,7 +90,7 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: visibleEntries
+        children: widget.entries
             .map((entry) => _buildEntryWidget(entry, 0))
             .toList(),
       ),
@@ -110,6 +108,8 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
 
   /// Build a draggable program/separator entry
   Widget _buildDraggableEntryWidget(IceMenuEntry entry, int depth) {
+    final isHidden = !entry.isVisible;
+    
     return Draggable<IceMenuEntry>(
       data: entry,
       feedback: Material(
@@ -158,7 +158,15 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
             ),
             child: ListTile(
               leading: _buildEntryIcon(entry),
-              title: Text(_getEntryLabel(entry)),
+              title: Text(
+                _getEntryLabel(entry),
+                style: TextStyle(
+                  decoration: isHidden ? TextDecoration.lineThrough : TextDecoration.none,
+                  color: isHidden ? Colors.grey : null,
+                  fontStyle: isHidden ? FontStyle.italic : FontStyle.normal,
+                ),
+              ),
+              subtitle: isHidden ? const Text('(Hidden)') : null,
               tileColor: Colors.transparent,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
@@ -173,8 +181,9 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
   Widget _buildSubmenuWidget(IceSubMenu menu, int depth) {
     debugPrint('Building submenu widget: ${menu.label} with ${menu.children.length} children at depth $depth');
     
-    // Filter out invisible children
-    final visibleChildren = menu.children.where((child) => child.isVisible).toList();
+    // Show all children (both visible and hidden) in the editor
+    final allChildren = menu.children;
+    final visibleCount = menu.children.where((child) => child.isVisible).length;
     
     return Padding(
       padding: EdgeInsets.only(left: depth * 10.0),
@@ -211,7 +220,7 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
                   )
                 : GestureDetector(
                     onDoubleTap: () => _startEditingSubmenu(menu),
-                    child: Text('${menu.label} (${visibleChildren.length} items)'),
+                    child: Text('${menu.label} (${visibleCount}/${allChildren.length} items)'),
                   ),
             backgroundColor: candidateData.isNotEmpty
                 ? Colors.green.withOpacity(0.1)
@@ -223,12 +232,12 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
                 : widget.selectedEntry == menu
                     ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
                     : Colors.transparent,
-            children: visibleChildren
+            children: allChildren
                 .map((child) => _buildEntryWidget(child, depth + 1))
                 .toList(),
           );
           
-          debugPrint('Created ExpansionTile for ${menu.label} with ${visibleChildren.length} children');
+          debugPrint('Created ExpansionTile for ${menu.label} with ${allChildren.length} children');
         },
       ),
     );

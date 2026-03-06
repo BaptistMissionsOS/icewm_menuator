@@ -44,7 +44,7 @@ class _MenuEditorPageState extends State<MenuEditorPage> {
   String? _errorMessage;
   late File _menuFile;
   String _menuFilePath = '';
-  bool _liveUpdateEnabled = true; // Enable live updates by default
+  bool _liveUpdateEnabled = false; // Live updates disabled by default
   Timer? _liveUpdateTimer; // Debounce timer for live updates
   
   @override
@@ -605,6 +605,41 @@ quit
     }
   }
 
+  /// Handle entry unhiding
+  void _onEntryUnhidden(IceMenuEntry entry) {
+    setState(() {
+      _unhideEntryRecursive(_menuEntries, entry);
+      _selectedEntry = entry;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Entry unhidden')),
+    );
+
+    // Live update: save and reload menu immediately
+    if (_liveUpdateEnabled) {
+      _saveAndReloadMenu();
+    }
+  }
+
+  /// Recursively unhide an entry
+  void _unhideEntryRecursive(List<IceMenuEntry> entries, IceMenuEntry target) {
+    for (int i = 0; i < entries.length; i++) {
+      if (entries[i] == target) {
+        if (entries[i] is IceProgram) {
+          entries[i] = (entries[i] as IceProgram).copyWith(isVisible: true);
+        } else if (entries[i] is IceSubMenu) {
+          entries[i] = (entries[i] as IceSubMenu).copyWith(isVisible: true);
+        }
+        return;
+      }
+
+      if (entries[i] is IceSubMenu) {
+        _unhideEntryRecursive((entries[i] as IceSubMenu).children, target);
+      }
+    }
+  }
+
   /// Recursively find and remove an entry
   void _removeEntryRecursive(List<IceMenuEntry> entries, IceMenuEntry target) {
     entries.removeWhere((entry) => entry == target);
@@ -917,6 +952,7 @@ quit
             selectedEntry: _selectedEntry,
             onEntryUpdated: _onEntryUpdated,
             onEntryDeleted: _onEntryDeleted,
+            onEntryUnhidden: _onEntryUnhidden,
             onAddEntry: _onAddEntry,
             onMoveUp: (entry) {
               moveEntryUp(entry);

@@ -6,6 +6,7 @@ class EntryEditorWidget extends StatefulWidget {
   final IceMenuEntry? selectedEntry;
   final Function(IceMenuEntry) onEntryUpdated;
   final Function(IceMenuEntry) onEntryDeleted;
+  final Function(IceMenuEntry)? onEntryUnhidden;
   final Function(EntryType) onAddEntry;
   final Function(IceMenuEntry)? onMoveUp;
   final Function(IceMenuEntry)? onMoveDown;
@@ -18,6 +19,7 @@ class EntryEditorWidget extends StatefulWidget {
     this.selectedEntry,
     required this.onEntryUpdated,
     required this.onEntryDeleted,
+    this.onEntryUnhidden,
     required this.onAddEntry,
     this.onMoveUp,
     this.onMoveDown,
@@ -225,6 +227,19 @@ class _EntryEditorWidgetState extends State<EntryEditorWidget> {
                     onPressed: widget.onClearSelection,
                     icon: const Icon(Icons.clear),
                     label: const Text('Clear Selection'),
+                  ),
+                if (widget.selectedEntry?.isVisible == false && widget.onEntryUnhidden != null)
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      if (widget.selectedEntry != null) {
+                        widget.onEntryUnhidden?.call(widget.selectedEntry!);
+                      }
+                    },
+                    icon: const Icon(Icons.visibility),
+                    label: const Text('Unhide'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                    ),
                   ),
                 ElevatedButton.icon(
                   onPressed: () {
