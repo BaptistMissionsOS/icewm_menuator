@@ -26,6 +26,58 @@ class DesktopApplication {
 
 /// Scanner for desktop applications
 class ApplicationsScanner {
+
+  /// Get the local applications directory for writing new .desktop files
+  static Directory get _localApplicationsDirectory {
+    final home = Platform.environment['HOME'] ?? '';
+    return Directory(path.join(home, '.local/share/applications'));
+  }
+
+  /// Save user-created applications from menu entries as .desktop files
+  static Future<void> saveApplications(List<IceMenuEntry> menuEntries) async {
+    final appDir = _localApplicationsDirectory;
+    if (!await appDir.exists()) {
+      await appDir.create(recursive: true);
+    }
+
+    final existingDesktopFiles = <String>{};
+    await for (final entity in appDir.list()) {
+      if (entity is File && entity.path.endsWith('.desktop')) {
+        existingDesktopFiles.add(path.basename(entity.path));
+      }
+    }
+
+    await _saveApplicationsRecursive(menuEntries, appDir, existingDesktopFiles);
+  }
+
+  static Future<void> _saveApplicationsRecursive(
+    List<IceMenuEntry> entries,
+    Directory appDir,
+    Set<String> existingDesktopFiles,
+  ) async {
+    for (final entry in entries) {
+      if (entry is IceProgram) {
+        // Sanitize label for filename
+        final fileName = entry.label.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_').toLowerCase();
+        final desktopFileName = '$fileName.desktop';
+        final filePath = path.join(appDir.path, desktopFileName);
+
+          final content = """
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=${entry.label}
+Exec=${entry.command}
+Icon=${entry.icon}
+Terminal=false
+""";
+          await File(filePath).writeAsString(content);
+      } else if (entry is IceSubMenu) {
+        await _saveApplicationsRecursive(entry.children, appDir, existingDesktopFiles);
+      }
+    }
+  }
+
   static const List<String> _applicationPaths = [
     '/usr/share/applications',
     '/usr/local/share/applications',

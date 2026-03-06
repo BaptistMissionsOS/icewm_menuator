@@ -22,6 +22,57 @@ class DesktopDirectory {
 
 /// Scanner for desktop directories
 class DirectoriesScanner {
+
+  /// Get the local desktop directories for writing new .directory files
+  static Directory get _localDirectoriesDirectory {
+    final home = Platform.environment["HOME"] ?? "";
+    return Directory(path.join(home, ".local/share/desktop-directories"));
+  }
+
+  /// Save user-created directories from menu entries as .directory files
+  static Future<void> saveDirectories(List<IceMenuEntry> menuEntries) async {
+    final dirDir = _localDirectoriesDirectory;
+    if (!await dirDir.exists()) {
+      await dirDir.create(recursive: true);
+    }
+
+    final existingDirectoryFiles = <String>{};
+    await for (final entity in dirDir.list()) {
+      if (entity is File && entity.path.endsWith(".directory")) {
+        existingDirectoryFiles.add(path.basename(entity.path));
+      }
+    }
+
+    await _saveDirectoriesRecursive(menuEntries, dirDir, existingDirectoryFiles);
+  }
+
+  static Future<void> _saveDirectoriesRecursive(
+    List<IceMenuEntry> entries,
+    Directory dirDir,
+    Set<String> existingDirectoryFiles,
+  ) async {
+    for (final entry in entries) {
+      if (entry is IceSubMenu) {
+        // Sanitize label for filename
+        final fileName = entry.label.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_').toLowerCase();
+        final directoryFileName = ";$fileName.directory";
+        final filePath = path.join(dirDir.path, directoryFileName);
+
+          final content = """
+[Desktop Entry]
+Version=1.0
+Type=Directory
+Name=${entry.label}
+Icon=${entry.icon}
+""";
+          await File(filePath).writeAsString(content);
+      } else if (entry is IceSubMenu) {
+        await _saveDirectoriesRecursive(entry.children, dirDir, existingDirectoryFiles);
+      }
+    }
+  }
+
+
   static const List<String> _directoryPaths = [
     '/usr/share/desktop-directories',
     '/usr/local/share/desktop-directories',

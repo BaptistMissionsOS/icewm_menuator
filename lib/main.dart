@@ -150,6 +150,12 @@ quit
       final content = IceMenuWriter.serialize(_menuEntries);
       await _menuFile.writeAsString(content);
 
+      // Save applications files
+      await ApplicationsScanner.saveApplications(_menuEntries);
+
+      // Save directories files
+      await DirectoriesScanner.saveDirectories(_menuEntries);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
