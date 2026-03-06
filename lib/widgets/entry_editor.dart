@@ -8,6 +8,7 @@ class EntryEditorWidget extends StatefulWidget {
   final Function(IceMenuEntry) onEntryDeleted;
   final Function(IceMenuEntry)? onEntryUnhidden;
   final Function(EntryType) onAddEntry;
+  final Function()? onAddSubdirectory;
   final Function(IceMenuEntry)? onMoveUp;
   final Function(IceMenuEntry)? onMoveDown;
   final Function()? onClearSelection;
@@ -21,6 +22,7 @@ class EntryEditorWidget extends StatefulWidget {
     required this.onEntryDeleted,
     this.onEntryUnhidden,
     required this.onAddEntry,
+    this.onAddSubdirectory,
     this.onMoveUp,
     this.onMoveDown,
     this.onClearSelection,
@@ -130,7 +132,16 @@ class _EntryEditorWidgetState extends State<EntryEditorWidget> {
                 ElevatedButton.icon(
                   onPressed: () => widget.onAddEntry(EntryType.menu),
                   icon: const Icon(Icons.folder),
-                  label: const Text('Submenu'),
+                  label: const Text('Directory'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    if (widget.onAddSubdirectory != null) {
+                      widget.onAddSubdirectory!();
+                    }
+                  },
+                  icon: const Icon(Icons.create_new_folder),
+                  label: const Text('Sub-Directory'),
                 ),
                 ElevatedButton.icon(
                   onPressed: () => widget.onAddEntry(EntryType.separator),
@@ -182,7 +193,7 @@ class _EntryEditorWidgetState extends State<EntryEditorWidget> {
                 ),
               ),
             const SizedBox(height: 16),
-            if (widget.selectedEntry is IceProgram && widget.availableSubmenus.isNotEmpty)
+            if ((widget.selectedEntry is IceProgram || widget.selectedEntry is IceSubMenu) && widget.availableSubmenus.isNotEmpty)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -193,11 +204,13 @@ class _EntryEditorWidgetState extends State<EntryEditorWidget> {
                   const SizedBox(height: 8),
                   DropdownButtonFormField<IceSubMenu>(
                     decoration: const InputDecoration(
-                      labelText: 'Move to Directory',
+                      labelText: 'Move to Directory/Sub Directory',
                       border: OutlineInputBorder(),
                       hintText: 'Choose directory',
                     ),
-                    items: widget.availableSubmenus.map((submenu) {
+                    items: widget.availableSubmenus
+                        .where((m) => m != widget.selectedEntry) // Don't move into itself
+                        .map((submenu) {
                       return DropdownMenuItem<IceSubMenu>(
                         value: submenu,
                         child: Text(submenu.label),
@@ -228,32 +241,37 @@ class _EntryEditorWidgetState extends State<EntryEditorWidget> {
                     icon: const Icon(Icons.clear),
                     label: const Text('Clear Selection'),
                   ),
-                if (widget.selectedEntry?.isVisible == false && widget.onEntryUnhidden != null)
+                if (widget.selectedEntry != null)
                   ElevatedButton.icon(
                     onPressed: () {
-                      if (widget.selectedEntry != null) {
+                      if (widget.selectedEntry!.isVisible) {
+                        // Logic to hide (set isVisible to false)
+                        widget.onEntryDeleted(widget.selectedEntry!);
+                      } else {
+                        // Logic to unhide
                         widget.onEntryUnhidden?.call(widget.selectedEntry!);
                       }
                     },
-                    icon: const Icon(Icons.visibility),
-                    label: const Text('Unhide'),
+                    icon: Icon(widget.selectedEntry!.isVisible ? Icons.visibility_off : Icons.visibility),
+                    label: Text(widget.selectedEntry!.isVisible ? 'Hide' : 'Unhide'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: widget.selectedEntry!.isVisible ? Colors.grey : Colors.green,
                     ),
                   ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    if (widget.selectedEntry != null) {
-                      widget.onEntryDeleted(widget.selectedEntry!);
-                      _initializeControllers();
-                    }
-                  },
-                  icon: const Icon(Icons.delete),
-                  label: Text(widget.selectedEntry?.isGenerated == true ? 'Hide' : 'Delete'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                if (widget.selectedEntry != null && !widget.selectedEntry!.isGenerated)
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      if (widget.selectedEntry != null) {
+                        widget.onEntryDeleted(widget.selectedEntry!);
+                        _initializeControllers();
+                      }
+                    },
+                    icon: const Icon(Icons.delete_forever),
+                    label: const Text('Delete'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -299,7 +317,7 @@ class _EntryEditorWidgetState extends State<EntryEditorWidget> {
     if (widget.selectedEntry is IceProgram) {
       return 'Program';
     } else if (widget.selectedEntry is IceSubMenu) {
-      return 'Submenu';
+      return 'Directory';
     } else if (widget.selectedEntry is IceSeparator) {
       return 'Separator';
     } else if (widget.selectedEntry is IceRestart) {

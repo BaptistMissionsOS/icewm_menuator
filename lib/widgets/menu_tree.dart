@@ -26,52 +26,28 @@ class MenuTreeWidget extends StatefulWidget {
 
 class _MenuTreeWidgetState extends State<MenuTreeWidget> {
   IceMenuEntry? _draggedEntry;
-  IceSubMenu? _editingSubmenu;
-  late TextEditingController _editController;
   
   @override
   void initState() {
     super.initState();
-    _editController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _editController.dispose();
     super.dispose();
   }
-
-  /// Start inline editing for a submenu
-  void _startEditingSubmenu(IceSubMenu submenu) {
-    setState(() {
-      _editingSubmenu = submenu;
-      _editController.text = submenu.label;
-    });
-  }
-
-  /// Save the inline edit and update the submenu
-  void _saveInlineEdit() {
-    if (_editingSubmenu != null) {
-      final updatedSubmenu = _editingSubmenu!.copyWith(
-        label: _editController.text,
-      );
-      
-      // Notify parent of the update
-      widget.onEntryUpdated?.call(updatedSubmenu);
-      
-      setState(() {
-        _editingSubmenu = null;
-      });
-    }
-  }
-
-  /// Cancel inline editing
-  void _cancelInlineEdit() {
-    setState(() {
-      _editingSubmenu = null;
-    });
-  }
   
+  /// Check if an entry is a descendant of a potential ancestor
+  bool _isDescendant(IceMenuEntry entry, IceSubMenu ancestor) {
+    if (ancestor.children.contains(entry)) return true;
+    for (var child in ancestor.children) {
+      if (child is IceSubMenu) {
+        if (_isDescendant(entry, child)) return true;
+      }
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Show all entries (both visible and hidden) in the editor
@@ -194,50 +170,74 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
         },
         onWillAccept: (draggedEntry) {
           setState(() => _draggedEntry = draggedEntry);
-          return draggedEntry != menu;
+          if (draggedEntry == null) return false;
+          if (draggedEntry == menu) return false;
+          
+          // Check if target menu is already a child of draggedEntry (if draggedEntry is a submenu)
+          if (draggedEntry is IceSubMenu) {
+            return !_isDescendant(menu, draggedEntry);
+          }
+          return true;
         },
         onLeave: (draggedEntry) {
           setState(() => _draggedEntry = null);
         },
         builder: (context, candidateData, rejectedData) {
-          final isEditing = _editingSubmenu == menu;
-          
-          return ExpansionTile(
-            key: Key(menu.label),
-            leading: const Icon(Icons.folder_open, size: 20),
-            initiallyExpanded: true, // Start expanded so submenus are visible
-            title: isEditing
-                ? TextField(
-                    controller: _editController,
-                    autofocus: true,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
+          return Draggable<IceMenuEntry>(
+            data: menu,
+            feedback: Material(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.folder_open, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      menu.label,
+                      style: const TextStyle(color: Colors.white),
                     ),
-                    style: Theme.of(context).textTheme.titleMedium,
-                    onSubmitted: (_) => _saveInlineEdit(),
-                    onEditingComplete: _saveInlineEdit,
-                  )
-                : GestureDetector(
-                    onDoubleTap: () => _startEditingSubmenu(menu),
-                    child: Text('${menu.label} (${visibleCount}/${allChildren.length} items)'),
-                  ),
-            backgroundColor: candidateData.isNotEmpty
-                ? Colors.green.withOpacity(0.1)
-                : widget.selectedEntry == menu
-                    ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
-                    : Colors.transparent,
-            collapsedBackgroundColor: candidateData.isNotEmpty
-                ? Colors.green.withOpacity(0.1)
-                : widget.selectedEntry == menu
-                    ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
-                    : Colors.transparent,
-            children: allChildren
-                .map((child) => _buildEntryWidget(child, depth + 1))
-                .toList(),
+                  ],
+                ),
+              ),
+            ),
+            onDragStarted: () {
+              setState(() => _draggedEntry = menu);
+            },
+            onDraggableCanceled: (velocity, offset) {
+              setState(() => _draggedEntry = null);
+            },
+            child: ExpansionTile(
+              key: Key(menu.label),
+              leading: const Icon(Icons.folder_open, size: 20),
+              initiallyExpanded: true, // Start expanded so submenus are visible
+              title: GestureDetector(
+                onTap: () => widget.onEntrySelected(menu),
+                onDoubleTap: () {
+                  widget.onEntrySelected(menu);
+                  // We could potentially focus the editor here if we had a way
+                },
+                child: Text('${menu.label} (${visibleCount}/${allChildren.length} items)'),
+              ),
+              backgroundColor: candidateData.isNotEmpty
+                  ? Colors.green.withOpacity(0.1)
+                  : widget.selectedEntry == menu
+                      ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+                      : Colors.transparent,
+              collapsedBackgroundColor: candidateData.isNotEmpty
+                  ? Colors.green.withOpacity(0.1)
+                  : widget.selectedEntry == menu
+                      ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+                      : Colors.transparent,
+              children: allChildren
+                  .map((child) => _buildEntryWidget(child, depth + 1))
+                  .toList(),
+            ),
           );
-          
-          debugPrint('Created ExpansionTile for ${menu.label} with ${allChildren.length} children');
         },
       ),
     );

@@ -665,7 +665,7 @@ quit
         break;
       case EntryType.menu:
         newEntry = IceSubMenu(
-          label: 'New Menu',
+          label: 'New Directory',
           icon: '',
         );
         break;
@@ -690,6 +690,35 @@ quit
     );
 
     // Live update: save and reload menu immediately
+    if (_liveUpdateEnabled) {
+      _saveAndReloadMenu();
+    }
+  }
+
+  /// Handle adding a new sub-directory to the currently selected directory
+  void _onAddSubdirectory() {
+    if (_selectedEntry is! IceSubMenu) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a Directory first')),
+      );
+      return;
+    }
+
+    final parent = _selectedEntry as IceSubMenu;
+    final newSubdir = IceSubMenu(
+      label: 'New Sub-Directory',
+      icon: '',
+    );
+
+    setState(() {
+      parent.children.add(newSubdir);
+      _selectedEntry = newSubdir;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Sub-Directory added')),
+    );
+
     if (_liveUpdateEnabled) {
       _saveAndReloadMenu();
     }
@@ -746,30 +775,20 @@ quit
     int offset,
   ) {
     final index = entries.indexOf(entry);
-    if (index >= 0 && index + offset >= 0 && index + offset < entries.length) {
-      setState(() {
-        entries.removeAt(index);
-        entries.insert(index + offset, entry);
-      });
-    } else {
-      // Try to find and move in nested menus
-      for (var e in entries) {
-        if (e is IceSubMenu) {
-          final nestedIndex = e.children.indexOf(entry);
-          if (nestedIndex >= 0 &&
-              nestedIndex + offset >= 0 &&
-              nestedIndex + offset < e.children.length) {
-            setState(() {
-              e.children.removeAt(nestedIndex);
-              e.children.insert(nestedIndex + offset, entry);
-            });
-            return;
-          } else if (nestedIndex >= 0) {
-            // Can't move within this menu, try nested menus
-            _moveEntryInList(e.children, entry, offset);
-            return;
-          }
-        }
+    if (index >= 0) {
+      if (index + offset >= 0 && index + offset < entries.length) {
+        setState(() {
+          entries.removeAt(index);
+          entries.insert(index + offset, entry);
+        });
+      }
+      return; // Found it, but could be at bounds
+    }
+
+    // Try to find and move in nested menus
+    for (var e in entries) {
+      if (e is IceSubMenu) {
+        _moveEntryInList(e.children, entry, offset);
       }
     }
   }
@@ -954,6 +973,7 @@ quit
             onEntryDeleted: _onEntryDeleted,
             onEntryUnhidden: _onEntryUnhidden,
             onAddEntry: _onAddEntry,
+            onAddSubdirectory: _onAddSubdirectory,
             onMoveUp: (entry) {
               moveEntryUp(entry);
               ScaffoldMessenger.of(context).showSnackBar(
