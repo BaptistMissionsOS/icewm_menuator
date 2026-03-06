@@ -200,7 +200,7 @@ class _EntryEditorWidgetState extends State<EntryEditorWidget> {
                     }
                   },
                   icon: const Icon(Icons.delete),
-                  label: const Text('Delete'),
+                  label: Text(widget.selectedEntry?.isGenerated == true ? 'Hide' : 'Delete'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                   ),

@@ -74,10 +74,25 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
   
   @override
   Widget build(BuildContext context) {
+    // Filter out invisible entries
+    final visibleEntries = widget.entries.where((entry) => entry.isVisible).toList();
+    
+    debugPrint('MenuTreeWidget building with ${visibleEntries.length} visible entries');
+    for (final entry in visibleEntries) {
+      if (entry is IceSubMenu) {
+        debugPrint('MenuTreeWidget submenu: ${entry.label} with ${entry.children.length} children');
+        for (final child in entry.children) {
+          debugPrint('  Child: ${child.label}');
+        }
+      } else if (entry is IceProgram) {
+        debugPrint('MenuTreeWidget program: ${entry.label}');
+      }
+    }
+    
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: widget.entries
+        children: visibleEntries
             .map((entry) => _buildEntryWidget(entry, 0))
             .toList(),
       ),
@@ -156,6 +171,11 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
 
   /// Build a submenu with expandable children (droppable)
   Widget _buildSubmenuWidget(IceSubMenu menu, int depth) {
+    debugPrint('Building submenu widget: ${menu.label} with ${menu.children.length} children at depth $depth');
+    
+    // Filter out invisible children
+    final visibleChildren = menu.children.where((child) => child.isVisible).toList();
+    
     return Padding(
       padding: EdgeInsets.only(left: depth * 10.0),
       child: DragTarget<IceMenuEntry>(
@@ -176,6 +196,7 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
           return ExpansionTile(
             key: Key(menu.label),
             leading: const Icon(Icons.folder_open, size: 20),
+            initiallyExpanded: true, // Start expanded so submenus are visible
             title: isEditing
                 ? TextField(
                     controller: _editController,
@@ -190,7 +211,7 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
                   )
                 : GestureDetector(
                     onDoubleTap: () => _startEditingSubmenu(menu),
-                    child: Text(menu.label),
+                    child: Text('${menu.label} (${visibleChildren.length} items)'),
                   ),
             backgroundColor: candidateData.isNotEmpty
                 ? Colors.green.withOpacity(0.1)
@@ -202,10 +223,12 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
                 : widget.selectedEntry == menu
                     ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
                     : Colors.transparent,
-            children: menu.children
+            children: visibleChildren
                 .map((child) => _buildEntryWidget(child, depth + 1))
                 .toList(),
           );
+          
+          debugPrint('Created ExpansionTile for ${menu.label} with ${visibleChildren.length} children');
         },
       ),
     );

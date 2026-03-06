@@ -24,6 +24,9 @@ class IceMenuWriter {
     int depth,
   ) {
     for (final entry in entries) {
+      // Skip invisible entries
+      if (!entry.isVisible) continue;
+
       final currentIndent = indent * depth;
 
       switch (entry.type) {

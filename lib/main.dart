@@ -7,7 +7,8 @@ import 'parser.dart';
 import 'writer.dart';
 import 'widgets/menu_tree.dart';
 import 'widgets/entry_editor.dart';
-import 'desktop_scanner.dart';
+import 'applications_scanner.dart';
+import 'directories_scanner.dart';
 
 void main() {
   runApp(const MyApp());
@@ -213,65 +214,60 @@ quit
     }
   }
 
-  /// Scan for desktop applications and directories, then organize them into a menu structure
-  Future<void> _scanAndOrganizeMenu() async {
+  /// Scan for desktop applications and add them to an "Other" directory
+  Future<void> _scanApplications() async {
     try {
       setState(() => _isLoading = true);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Scanning and organizing applications...'),
+            content: Text('Scanning applications...'),
             duration: Duration(seconds: 2),
           ),
         );
       }
 
-      final organizedMenu = await DesktopScanner.scanAndOrganizeMenu();
+      final otherMenu = await ApplicationsScanner.scanAndCreateOtherDirectory();
       final existingCommands = _getExistingCommands();
 
-      int addedApps = 0;
-      int addedDirs = 0;
-
-      // Add organized menu entries, avoiding duplicates
-      for (final entry in organizedMenu) {
-        if (entry is IceSubMenu) {
-          // Check if this directory already exists
-          final existingDirNames = _getExistingSubmenuNames();
-          if (!existingDirNames.contains(entry.label)) {
-            // Filter out applications that already exist
-            final filteredChildren = entry.children.where((child) {
-              if (child is IceProgram) {
-                return !existingCommands.contains(child.command);
-              }
-              return true;
-            }).toList();
-
-            if (filteredChildren.isNotEmpty) {
-              final newSubmenu = IceSubMenu(
-                label: entry.label,
-                icon: entry.icon,
-                children: filteredChildren,
-              );
-
-              setState(() {
-                _menuEntries.add(newSubmenu);
-              });
-
-              addedDirs++;
-              addedApps += filteredChildren.length;
-            }
-          }
+      // Filter out applications that already exist
+      final filteredChildren = otherMenu.children.where((child) {
+        if (child is IceProgram) {
+          return !existingCommands.contains(child.command);
         }
-      }
+        return true;
+      }).toList();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Added $addedDirs directories with $addedApps applications'),
-            duration: const Duration(seconds: 4),
-          ),
+      if (filteredChildren.isNotEmpty) {
+        final newOtherMenu = IceSubMenu(
+          label: otherMenu.label,
+          icon: otherMenu.icon,
+          isGenerated: true,
+          children: filteredChildren,
         );
+
+        setState(() {
+          _menuEntries.insert(0, newOtherMenu);
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Added ${filteredChildren.length} applications to "Other" directory'),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('All applications already exist in menu'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       }
 
       // Auto-save and reload
@@ -281,7 +277,68 @@ quit
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error scanning and organizing: $e')),
+          SnackBar(content: Text('Error scanning applications: $e')),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  /// Scan for desktop directories and add them as empty menus
+  Future<void> _scanDirectories() async {
+    try {
+      setState(() => _isLoading = true);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Scanning directories...'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      final directories = await DirectoriesScanner.scanAndCreateDirectories();
+      final existingSubmenuNames = _getExistingSubmenuNames();
+
+      int addedDirs = 0;
+
+      for (final dir in directories) {
+        if (!existingSubmenuNames.contains(dir.label)) {
+          setState(() {
+            _menuEntries.insert(0, dir);
+          });
+          addedDirs++;
+        }
+      }
+
+      if (mounted) {
+        if (addedDirs > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Added $addedDirs directories'),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('All directories already exist in menu'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+
+      // Auto-save and reload
+      if (_liveUpdateEnabled) {
+        await _saveAndReloadMenu();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error scanning directories: $e')),
         );
       }
     } finally {
@@ -347,6 +404,66 @@ quit
     }
   }
 
+  /// Show confirmation dialog for resetting the menu
+  Future<void> _showResetConfirmation() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Menu'),
+        content: const Text(
+          'This will clear all menu entries and start from scratch. '
+          'A backup will be created automatically. Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      await _resetMenu();
+    }
+  }
+
+  /// Reset the menu to empty state
+  Future<void> _resetMenu() async {
+    try {
+      // Create backup first
+      await _createBackup();
+
+      setState(() {
+        _menuEntries.clear();
+        _selectedEntry = null;
+      });
+
+      // Save empty menu
+      await _saveAndReloadMenu();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Menu reset. Backup saved as ~/.icewm/menu.bak'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error resetting menu: $e')),
+        );
+      }
+    }
+  }
+
   /// Handle entry selection
   void _onEntrySelected(IceMenuEntry entry) {
     setState(() {
@@ -396,18 +513,49 @@ quit
 
   /// Handle entry deletion
   void _onEntryDeleted(IceMenuEntry entry) {
-    setState(() {
-      _removeEntryRecursive(_menuEntries, entry);
-      _selectedEntry = null;
-    });
+    if (entry.isGenerated) {
+      // Hide generated entries instead of deleting them
+      setState(() {
+        _hideEntryRecursive(_menuEntries, entry);
+        _selectedEntry = null;
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Entry deleted')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Entry hidden')),
+      );
+    } else {
+      // Delete user-created entries
+      setState(() {
+        _removeEntryRecursive(_menuEntries, entry);
+        _selectedEntry = null;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Entry deleted')),
+      );
+    }
 
     // Live update: save and reload menu immediately
     if (_liveUpdateEnabled) {
       _saveAndReloadMenu();
+    }
+  }
+
+  /// Recursively hide an entry
+  void _hideEntryRecursive(List<IceMenuEntry> entries, IceMenuEntry target) {
+    for (int i = 0; i < entries.length; i++) {
+      if (entries[i] == target) {
+        if (entries[i] is IceProgram) {
+          entries[i] = (entries[i] as IceProgram).copyWith(isVisible: false);
+        } else if (entries[i] is IceSubMenu) {
+          entries[i] = (entries[i] as IceSubMenu).copyWith(isVisible: false);
+        }
+        return;
+      }
+
+      if (entries[i] is IceSubMenu) {
+        _hideEntryRecursive((entries[i] as IceSubMenu).children, target);
+      }
     }
   }
 
@@ -563,10 +711,34 @@ quit
         ),
         elevation: 0,
         actions: [
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(Icons.auto_awesome),
-            tooltip: 'Scan & Organize Applications',
-            onPressed: _scanAndOrganizeMenu,
+            tooltip: 'Scan Options',
+            onSelected: (value) {
+              switch (value) {
+                case 'applications':
+                  _scanApplications();
+                  break;
+                case 'directories':
+                  _scanDirectories();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'applications',
+                child: Text('Scan Applications'),
+              ),
+              const PopupMenuItem(
+                value: 'directories',
+                child: Text('Scan Directories'),
+              ),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Reset Menu',
+            onPressed: _showResetConfirmation,
           ),
           IconButton(
             icon: const Icon(Icons.flash_on),
@@ -594,7 +766,7 @@ quit
             onPressed: _saveMenuFile,
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.folder_open),
             tooltip: 'Reload Menu File',
             onPressed: _loadMenuFile,
           ),
