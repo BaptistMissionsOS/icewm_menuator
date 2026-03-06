@@ -14,6 +14,24 @@ abstract class IceMenuEntry {
 /// Format: prog "Name" "icon" "command"
 class IceProgram implements IceMenuEntry {
   @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is IceProgram &&
+          runtimeType == other.runtimeType &&
+          label == other.label &&
+          icon == other.icon &&
+          command == other.command &&
+          isGenerated == other.isGenerated &&
+          isVisible == other.isVisible;
+
+  @override
+  int get hashCode =>
+      label.hashCode ^
+      icon.hashCode ^
+      command.hashCode ^
+      isGenerated.hashCode ^
+      isVisible.hashCode;
+  @override
   final String label;
   @override
   final String icon;
@@ -60,6 +78,22 @@ class IceProgram implements IceMenuEntry {
 /// Represents a submenu entry in IceWM menu
 /// Format: menu "Name" "icon" { ... }
 class IceSubMenu implements IceMenuEntry {
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is IceSubMenu &&
+          runtimeType == other.runtimeType &&
+          label == other.label &&
+          icon == other.icon &&
+          isGenerated == other.isGenerated &&
+          isVisible == other.isVisible;
+
+  @override
+  int get hashCode =>
+      label.hashCode ^
+      icon.hashCode ^
+      isGenerated.hashCode ^
+      isVisible.hashCode;
   @override
   final String label;
   @override
