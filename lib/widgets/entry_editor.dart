@@ -12,7 +12,7 @@ class EntryEditorWidget extends StatefulWidget {
   final Function(IceMenuEntry)? onMoveUp;
   final Function(IceMenuEntry)? onMoveDown;
   final Function()? onClearSelection;
-  final Function(IceSubMenu)? onMoveToSubmenu;
+  final Function(IceSubMenu?)? onMoveToSubmenu;
   final List<IceSubMenu> availableSubmenus;
 
   const EntryEditorWidget({
@@ -193,7 +193,7 @@ class _EntryEditorWidgetState extends State<EntryEditorWidget> {
                 ),
               ),
             const SizedBox(height: 16),
-            if ((widget.selectedEntry is IceProgram || widget.selectedEntry is IceSubMenu) && widget.availableSubmenus.isNotEmpty)
+            if ((widget.selectedEntry is IceProgram || widget.selectedEntry is IceSubMenu))
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -202,23 +202,48 @@ class _EntryEditorWidgetState extends State<EntryEditorWidget> {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  DropdownButtonFormField<IceSubMenu>(
+                  DropdownButtonFormField<String>(
                     decoration: const InputDecoration(
                       labelText: 'Move to Directory/Sub Directory',
                       border: OutlineInputBorder(),
                       hintText: 'Choose directory',
                     ),
-                    items: widget.availableSubmenus
-                        .where((m) => m != widget.selectedEntry) // Don't move into itself
-                        .map((submenu) {
-                      return DropdownMenuItem<IceSubMenu>(
-                        value: submenu,
-                        child: Text(submenu.label),
-                      );
-                    }).toList(),
-                    onChanged: (IceSubMenu? selectedSubmenu) {
-                      if (selectedSubmenu != null && widget.onMoveToSubmenu != null) {
-                        widget.onMoveToSubmenu!(selectedSubmenu);
+                    items: [
+                      // Add "Main" option to move to root level
+                      const DropdownMenuItem<String>(
+                        value: 'main',
+                        child: Row(
+                          children: [
+                            Icon(Icons.home, size: 16),
+                            SizedBox(width: 8),
+                            Text('Main (Root Level)'),
+                          ],
+                        ),
+                      ),
+                      // Add existing submenus
+                      ...widget.availableSubmenus
+                          .where((m) => m != widget.selectedEntry) // Don't move into itself
+                          .map((submenu) {
+                        return DropdownMenuItem<String>(
+                          value: submenu.label,
+                          child: Text(submenu.label),
+                        );
+                      }),
+                    ],
+                    onChanged: (String? selectedOption) {
+                      if (selectedOption != null) {
+                        if (selectedOption == 'main') {
+                          // Move to root level
+                        widget.onMoveToSubmenu?.call(null);
+                        } else {
+                          // Find the submenu by label
+                          final targetSubmenu = widget.availableSubmenus
+                              .where((m) => m.label == selectedOption)
+                              .firstOrNull;
+                          if (targetSubmenu != null) {
+                            widget.onMoveToSubmenu?.call(targetSubmenu);
+                          }
+                        }
                       }
                     },
                   ),

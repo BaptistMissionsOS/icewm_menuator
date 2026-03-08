@@ -6,7 +6,7 @@ class MenuTreeWidget extends StatefulWidget {
   final List<IceMenuEntry> entries;
   final Function(IceMenuEntry) onEntrySelected;
   final Function(IceMenuEntry, IceMenuEntry)? onEntryMoved;
-  final Function(IceMenuEntry, IceSubMenu)? onEntryDropped;
+  final Function(IceMenuEntry, IceSubMenu?)? onEntryDropped;
   final IceMenuEntry? selectedEntry;
   final Function(IceMenuEntry)? onEntryUpdated;
 
@@ -63,13 +63,42 @@ class _MenuTreeWidgetState extends State<MenuTreeWidget> {
       }
     }
     
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: widget.entries
-            .map((entry) => _buildEntryWidget(entry, 0))
-            .toList(),
-      ),
+    return DragTarget<IceMenuEntry>(
+      onAccept: (draggedEntry) {
+        setState(() => _draggedEntry = null);
+        // Drop at root level - move entry to become a parent-level directory
+        if (widget.onEntryDropped != null) {
+          widget.onEntryDropped!(draggedEntry, null);
+        }
+      },
+      onWillAccept: (draggedEntry) {
+        setState(() => _draggedEntry = draggedEntry);
+        if (draggedEntry == null) return false;
+        // Allow dropping at root level if entry is not already at root
+        return !widget.entries.contains(draggedEntry);
+      },
+      onLeave: (draggedEntry) {
+        setState(() => _draggedEntry = null);
+      },
+      builder: (context, candidateData, rejectedData) {
+        return Container(
+          width: double.infinity,
+          decoration: candidateData.isNotEmpty
+              ? BoxDecoration(
+                  border: Border.all(color: Colors.green, width: 2),
+                  borderRadius: BorderRadius.circular(4),
+                )
+              : null,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: widget.entries
+                  .map((entry) => _buildEntryWidget(entry, 0))
+                  .toList(),
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -754,23 +754,34 @@ quit
     }
   }
 
-  /// Handle dropping an entry into a submenu
-  void _onEntryDropped(IceMenuEntry entry, IceSubMenu targetMenu) {
+  /// Handle dropping an entry into a submenu or at root level
+  void _onEntryDropped(IceMenuEntry entry, IceSubMenu? targetMenu) {
     setState(() {
       // Remove entry from current location
       _removeEntryRecursive(_menuEntries, entry);
 
-      // Add entry to target menu
-      targetMenu.children.add(entry);
+      if (targetMenu == null) {
+        // Drop at root level - move entry to become a parent-level directory
+        _menuEntries.add(entry);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Moved "${entry.label}" to root level'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        // Add entry to target menu
+        targetMenu.children.add(entry);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Moved "${entry.label}" to "${targetMenu.label}"'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      
       _selectedEntry = entry;
     });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Moved to "${targetMenu.label}"'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
 
     // Live update: save and reload menu immediately
     if (_liveUpdateEnabled) {
@@ -1027,7 +1038,7 @@ quit
                 _selectedEntry = null;
               });
             },
-            onMoveToSubmenu: (IceSubMenu submenu) {
+            onMoveToSubmenu: (IceSubMenu? submenu) {
               if (_selectedEntry != null) {
                 _onEntryDropped(_selectedEntry!, submenu);
               }

@@ -28,6 +28,13 @@ class DesktopApplication {
 /// Scanner for desktop applications
 class ApplicationsScanner {
 
+  /// Sanitize command string by removing desktop file Exec variables
+  /// Removes %u, %U, %f, %F, %i, and %k as per Desktop Entry Specification
+  static String sanitizeCommand(String rawCommand) {
+    // Remove Exec variables and clean up whitespace
+    return rawCommand.replaceAll(RegExp(r'\%[uUfFik]'), '').trim();
+  }
+
   /// Get the local applications directory for writing new .desktop files
   static Directory get _localApplicationsDirectory {
     final home = Platform.environment['HOME'] ?? '';
@@ -124,6 +131,8 @@ Terminal=false
   static const List<String> _applicationPaths = [
     '/usr/share/applications',
     '/usr/local/share/applications',
+    '/var/lib/flatpak/exports/share/applications',
+    '/var/lib/snapd/desktop/applications',
   ];
 
   /// Get the local application paths for the current user
@@ -131,6 +140,7 @@ Terminal=false
     final home = Platform.environment['HOME'] ?? '';
     return [
       path.join(home, '.local/share/applications'),
+      path.join(home, '.local/share/flatpak/exports/share/applications'),
     ];
   }
 
@@ -139,9 +149,22 @@ Terminal=false
     final applications = <DesktopApplication>[];
     final allPaths = [..._applicationPaths, ..._localApplicationPaths];
 
-    for (final scanPath in allPaths) {
+    // Sort paths to prioritize local over system
+    final sortedPaths = List<String>.from(allPaths);
+    sortedPaths.sort((a, b) {
+      // Local paths come first
+      final aIsLocal = a.contains('.local');
+      final bIsLocal = b.contains('.local');
+      if (aIsLocal && !bIsLocal) return -1;
+      if (!aIsLocal && bIsLocal) return 1;
+      return a.compareTo(b);
+    });
+
+    for (final scanPath in sortedPaths) {
       final dir = Directory(scanPath);
-      if (!await dir.exists()) continue;
+      if (!await dir.exists()) {
+        continue;
+      }
 
       await for (final entity in dir.list(recursive: true)) {
         if (entity is File && entity.path.endsWith('.desktop')) {
@@ -197,12 +220,23 @@ Terminal=false
                 icon = value;
                 break;
               case 'Exec':
-                exec = value;
+                exec = sanitizeCommand(value);
                 break;
               case 'Categories':
                 // Categories are semicolon-separated
                 categories = value.split(';').where((cat) => cat.isNotEmpty).toList();
                 break;
+              // Disabled NoDisplay/Hidden filtering to maximize app count
+              /*
+              case 'NoDisplay':
+              case 'Hidden':
+                // Skip applications that are meant to be hidden
+                if (value.toLowerCase() == 'true') {
+                  debugPrint('Skipping hidden app: $name');
+                  return null;
+                }
+                break;
+              */
               default:
                 additionalFields[key] = value;
             }
