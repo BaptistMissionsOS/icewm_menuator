@@ -14,24 +14,82 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _isDarkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemePreference();
+  }
+
+  /// Load theme preference from shared preferences
+  Future<void> _loadThemePreference() async {
+    // For now, we'll use a simple approach - in a real app you might want to use shared_preferences
+    // Check system theme preference
+    final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    setState(() {
+      _isDarkMode = brightness == Brightness.dark;
+    });
+  }
+
+  /// Save theme preference
+  Future<void> _saveThemePreference() async {
+    // In a real implementation, you'd save this to shared_preferences
+    // For now, we'll just apply the theme
+  }
+
+  /// Toggle between light and dark mode
+  void _toggleTheme() {
+    setState(() {
+      _isDarkMode = !_isDarkMode;
+    });
+    _saveThemePreference();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'IceWM Menuator',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.light,
+        ),
         useMaterial3: true,
       ),
-      home: const MenuEditorPage(),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      home: MenuEditorPage(
+        isDarkMode: _isDarkMode,
+        onThemeChanged: _toggleTheme,
+      ),
     );
   }
 }
 
 class MenuEditorPage extends StatefulWidget {
-  const MenuEditorPage({super.key});
+  final bool isDarkMode;
+  final VoidCallback onThemeChanged;
+
+  const MenuEditorPage({
+    super.key,
+    required this.isDarkMode,
+    required this.onThemeChanged,
+  });
 
   @override
   State<MenuEditorPage> createState() => _MenuEditorPageState();
@@ -852,6 +910,12 @@ quit
         ),
         elevation: 0,
         actions: [
+          // Theme toggle button
+          IconButton(
+            icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            tooltip: widget.isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+            onPressed: widget.onThemeChanged,
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.auto_awesome),
             tooltip: 'Scan Options',

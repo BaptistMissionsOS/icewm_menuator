@@ -8,7 +8,8 @@ Welcome to the IceWM Menuator documentation. This collection of guides covers ev
 **Perfect for new users and everyday use**
 
 - Getting started with the application
-- Understanding the interface
+- Understanding the interface and top bar actions
+- Theme selection and switching
 - Adding and editing menu entries
 - Common tasks like organizing applications
 - Saving and reloading your menu
@@ -18,6 +19,7 @@ Welcome to the IceWM Menuator documentation. This collection of guides covers ev
 **For power users and custom setups**
 
 - Advanced menu structures and nesting
+- **Theme customization** - Technical details about the theming system
 - Custom icons and theme integration
 - Command-line options and environment variables
 - File structure and format details
@@ -30,6 +32,7 @@ Welcome to the IceWM Menuator documentation. This collection of guides covers ev
 
 - Installation and setup issues
 - Runtime problems and crashes
+- **Theme issues** - Theme not working, detection problems
 - Menu file corruption and recovery
 - IceWM integration issues
 - Performance troubleshooting
@@ -41,6 +44,9 @@ Welcome to the IceWM Menuator documentation. This collection of guides covers ev
 ### I'm new to IceWM Menuator...
 Start with the **[Basic User Guide](basic-guide.md#getting-started)** to learn the fundamentals.
 
+### I want to change the theme...
+Check the **[Basic User Guide → Theme Selection](basic-guide.md#theme-selection)** for simple theme switching, or the **[Advanced User Guide → Theme Customization](advanced-guide.md#theme-customization)** for technical details.
+
 ### I'm having problems...
 Check the **[Troubleshooting Guide](troubleshooting.md)** for solutions to common issues.
 
@@ -50,16 +56,22 @@ Read the **[Advanced User Guide](advanced-guide.md)** for power features and cus
 ### I need to fix the "Lost connection to device" error...
 Go directly to **[Troubleshooting Guide → Lost Connection Error](troubleshooting.md#lost-connection-to-device-error)**.
 
+### My theme isn't working properly...
+See **[Troubleshooting Guide → Theme Issues](troubleshooting.md#theme-issues)** for theme-specific problems.
+
 ## 📋 Common Tasks
 
 | Task | Guide | Section |
 |------|-------|---------|
 | Install the application | Basic | Getting Started |
+| **Switch themes** | Basic | Theme Selection |
 | Add a new program | Basic | Managing Menu Entries |
 | Create submenus | Basic | Common Tasks |
 | Use custom icons | Advanced | Custom Icons and Themes |
+| **Customize theme colors** | Advanced | Theme Customization |
 | Automate menu updates | Advanced | Automation and Scripting |
 | Fix crash on save | Troubleshooting | Lost Connection Error |
+| **Fix theme issues** | Troubleshooting | Theme Issues |
 | Backup my menu | Basic | Saving and Reloading |
 | Sync between computers | Advanced | Multi-user Setups |
 

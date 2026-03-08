@@ -6,11 +6,12 @@ This guide helps you diagnose and resolve common issues with IceWM Menuator.
 
 1. [Installation Issues](#installation-issues)
 2. [Runtime Problems](#runtime-problems)
-3. [Menu File Issues](#menu-file-issues)
-4. [IceWM Integration Problems](#icewm-integration-problems)
-5. [Performance Issues](#performance-issues)
-6. [Debugging Techniques](#debugging-techniques)
-7. [FAQ](#faq)
+3. [Theme Issues](#theme-issues)
+4. [Menu File Issues](#menu-file-issues)
+5. [IceWM Integration Problems](#icewm-integration-problems)
+6. [Performance Issues](#performance-issues)
+7. [Debugging Techniques](#debugging-techniques)
+8. [FAQ](#faq)
 
 ## Installation Issues
 
@@ -140,6 +141,45 @@ ls -la ~/.icewm/
 chmod 755 ~/.icewm/
 chmod 644 ~/.icewm/menu
 ```
+
+## Theme Issues
+
+### Theme Not Changing
+
+**Problem**: Clicking theme toggle doesn't change the appearance
+
+**Solutions**:
+1. **Check for Build Errors**: Ensure the app compiled successfully
+2. **Restart App**: Try restarting the application
+3. **Check Flutter Version**: Ensure you're using a recent Flutter version with Material 3 support
+
+### Theme Detection Not Working
+
+**Problem**: App doesn't detect system theme correctly
+
+**Diagnosis**:
+```bash
+# Check system theme (if available)
+gsettings get org.gnome.desktop.interface gtk-theme
+```
+
+**Solutions**:
+1. **Manual Toggle**: Use the theme toggle button in the top bar
+2. **Check Desktop Environment**: Theme detection works best on GNOME-based desktops
+3. **Update Flutter**: Ensure you have the latest Flutter version
+
+### Theme Looks Wrong
+
+**Problem**: Colors appear incorrect or inconsistent
+
+**Solutions**:
+1. **Clear Flutter Cache**: 
+   ```bash
+   flutter clean
+   flutter pub get
+   ```
+2. **Check Display Settings**: Some display settings can affect theme appearance
+3. **Report Issue**: If themes consistently look wrong, it may be a bug
 
 ### Freezes or Unresponsive UI
 
@@ -490,10 +530,20 @@ echo "Exit code: $?"
 **Meaning**: Cannot write to menu file
 **Fix**: Check file permissions and ownership
 
+#### "Theme not changing"
+**Meaning**: Theme toggle not working
+**Fix**: Restart app or check Flutter version
+
 ## FAQ
 
 ### Q: Why does my app crash when I click Save?
 **A**: Most likely the "suicidal signal" issue. The pkill command is killing your app too. Make sure you're using `pkill -HUP -x icewm` (with the -x flag).
+
+### Q: How do I change the theme?
+**A**: Click the theme toggle button (🌙/☀️) in the top bar. The app also automatically detects your system theme on startup.
+
+### Q: Why doesn't the theme match my system?
+**A**: Theme detection works best on GNOME-based desktops. You can always manually toggle the theme using the button in the top bar.
 
 ### Q: How do I backup my menu?
 **A**: 
@@ -526,6 +576,9 @@ cp ~/.icewm/menu.bak ~/.icewm/menu  # if backup exists
 
 ### Q: Can I sync menus between computers?
 **A**: Yes! Copy ~/.icewm/menu and the applications/directories folders.
+
+### Q: Why does the theme look wrong?
+**A**: Try clearing Flutter cache (`flutter clean && flutter pub get`) and restart the app.
 
 ## Getting Additional Help
 

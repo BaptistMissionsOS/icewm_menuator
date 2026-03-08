@@ -5,12 +5,13 @@ This guide covers advanced features, customization options, and technical detail
 ## Table of Contents
 
 1. [Advanced Menu Structure](#advanced-menu-structure)
-2. [Custom Icons and Themes](#custom-icons-and-themes)
-3. [Command Line Options](#command-line-options)
-4. [File Structure and Formats](#file-structure-and-formats)
-5. [Automation and Scripting](#automation-and-scripting)
-6. [Performance Optimization](#performance-optimization)
-7. [Advanced Troubleshooting](#advanced-troubleshooting)
+2. [Theme Customization](#theme-customization)
+3. [Custom Icons and Themes](#custom-icons-and-themes)
+4. [Command Line Options](#command-line-options)
+5. [File Structure and Formats](#file-structure-and-formats)
+6. [Automation and Scripting](#automation-and-scripting)
+7. [Performance Optimization](#performance-optimization)
+8. [Advanced Troubleshooting](#advanced-troubleshooting)
 
 ## Advanced Menu Structure
 
@@ -58,6 +59,67 @@ While not directly supported in the GUI, you can manually edit the menu file to 
 # Only show if the program exists
 prog "GIMP" "/usr/share/pixmaps/gimp.png" gimp
 ```
+
+## Theme Customization
+
+### Theme System Overview
+
+IceWM Menuator uses Flutter's built-in theming system with Material 3 design:
+
+- **Automatic Detection**: Detects system theme preference on startup
+- **Manual Toggle**: Users can switch between themes via the UI
+- **Material 3**: Both themes follow modern Material 3 guidelines
+- **Real-time Switching**: Themes change instantly without app restart
+
+### Theme Technical Details
+
+#### Theme Configuration
+```dart
+// Light Theme
+ThemeData(
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: Colors.blue,
+    brightness: Brightness.light,
+  ),
+  useMaterial3: true,
+)
+
+// Dark Theme
+ThemeData(
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: Colors.blue,
+    brightness: Brightness.dark,
+  ),
+  useMaterial3: true,
+)
+```
+
+#### Theme Detection
+The app uses `WidgetsBinding.instance.platformDispatcher.platformBrightness` to detect the system theme preference on startup.
+
+#### Theme Persistence
+Currently, theme preference is maintained during the session. Future versions may include persistent storage using `shared_preferences`.
+
+### Custom Theme Colors
+
+The application uses a blue seed color for both themes. You can modify the theme by changing the `seedColor` in the source code:
+
+```dart
+seedColor: Colors.blue,  // Change to any Material color
+```
+
+Available Material colors include:
+- `Colors.red`, `Colors.green`, `Colors.blue`
+- `Colors.purple`, `Colors.orange`, `Colors.teal`
+- And many more - see Flutter's Colors class
+
+### Future Theme Features
+
+Planned enhancements for theme support:
+- **Persistent Storage**: Save theme preference across sessions
+- **Custom Colors**: User-selectable accent colors
+- **High Contrast**: Additional high-contrast themes
+- **System Integration**: Better integration with desktop theme settings
 
 ## Custom Icons and Themes
 

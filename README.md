@@ -8,11 +8,13 @@ A Flutter desktop application for managing IceWM menu files with drag-and-drop o
 - **Drag & Drop**: Move menu entries between menus with visual feedback
 - **Live Updates**: Changes appear immediately in IceWM without manual reloading
 - **Inline Editing**: Double-click submenu names to edit them directly
+- **Theme Support**: Toggle between light and dark modes with automatic system theme detection
 - **Smart Application Scanning**: Automatically discovers and organizes desktop applications into categorized directories
 - **Intelligent Organization**: Applications are automatically placed in appropriate directories based on their categories (Multimedia, Development, Office, etc.)
 - **Duplicate Prevention**: Smart scanning that avoids adding items already in your menu
 - **Entry Types**: Support for programs, submenus, separators, restart, and quit entries
 - **Backup System**: Automatic backup creation before modifications
+- **Modern UI**: Material 3 design with menu-themed application icon
 
 ## Dependencies
 
@@ -41,15 +43,28 @@ A Flutter desktop application for managing IceWM menu files with drag-and-drop o
 ## Usage
 
 1. The app automatically loads your `~/.icewm/menu` file
-2. Use the tree view on the left to navigate and select menu entries
-3. Edit entry properties in the right panel
-4. **Inline Editing**: Double-click on submenu names in the tree view to edit them directly
-5. **Smart Scanning**: Click the sparkle icon (✨) to automatically scan and organize all desktop applications into categorized directories
-6. Drag entries to reorganize them between menus
-7. Changes are automatically saved and IceWM is reloaded immediately (when live updates are enabled)
-8. **Selection**: Click an entry to select it, click the selected entry again to deselect and return to the "Select an entry to edit" panel
-9. **Clear Selection**: Use the "Clear Selection" button in the editor panel to deselect the current entry
-10. Use the toolbar buttons to manually save, backup, or reload if needed
+2. **Theme Selection**: Click the theme toggle (🌙/☀️) in the top bar to switch between dark and light modes
+3. Use the tree view on the left to navigate and select menu entries
+4. Edit entry properties in the right panel
+5. **Inline Editing**: Double-click on submenu names in the tree view to edit them directly
+6. **Smart Scanning**: Click the sparkle icon (✨) to automatically scan and organize all desktop applications into categorized directories
+7. Drag entries to reorganize them between menus
+8. Changes are automatically saved and IceWM is reloaded immediately (when live updates are enabled)
+9. **Selection**: Click an entry to select it, click the selected entry again to deselect and return to the "Select an entry to edit" panel
+10. **Clear Selection**: Use the "Clear Selection" button in the editor panel to deselect the current entry
+11. Use the toolbar buttons to manually save, backup, or reload if needed
+
+### Interface Overview
+
+**Top Bar Actions** (left to right):
+- **Theme Toggle**: Switch between light/dark modes
+- **Scan Options**: Scan applications or directories
+- **Reset Menu**: Clear all entries and start fresh
+- **Live Updates**: Enable/disable automatic saving and reloading
+- **Create Backup**: Backup current menu
+- **Save Menu**: Manually save changes
+- **Reload File**: Reload menu from disk
+- **Reload IceWM**: Force IceWM to reload its menu
 
 ## Scanning
 
