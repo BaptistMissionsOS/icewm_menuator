@@ -84,6 +84,23 @@ The application scans for desktop files in standard locations and organizes them
 
 Scanning automatically avoids duplicates by checking existing menu entries before adding new ones.
 
+## Screenshots
+
+### Main Interface
+![Main Interface](screenshots/menu.png)
+
+### Theme Support
+![Light and Dark Themes](screenshots/light-dark.png)
+
+### Adding Menu Entries
+![Add Menu Entry](screenshots/add.png)
+
+### Application Scanning
+![Application Scanning](screenshots/scan.png)
+
+### Directory Organization
+![Directory Organization](screenshots/dir.png)
+
 ## Documentation
 
 For detailed guides and troubleshooting, see the [docs/](docs/) directory:
