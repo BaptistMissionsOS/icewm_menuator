@@ -486,6 +486,39 @@ quit
     }
   }
 
+  /// Show backup/restore options dialog
+  Future<void> _showBackupRestoreDialog() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Backup & Restore'),
+        content: const Text(
+          'Choose an action:',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('backup'),
+            child: const Text('Create Backup'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('restore'),
+            child: const Text('Restore Backup'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == 'backup') {
+      await _createBackup();
+    } else if (result == 'restore') {
+      await _restoreBackup();
+    }
+  }
+
   /// Create a backup of the current menu
   Future<void> _createBackup() async {
     try {
@@ -504,6 +537,47 @@ quit
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error creating backup: $e')),
+        );
+      }
+    }
+  }
+
+  /// Restore backup of the current menu
+  Future<void> _restoreBackup() async {
+    try {
+      final backupFile = File('${_menuFile.path}.bak');
+      
+      if (!await backupFile.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No backup file found at ~/.icewm/menu.bak'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      await backupFile.copy(_menuFile.path);
+      await _loadMenuFile();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Backup restored successfully'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error restoring backup: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -962,8 +1036,8 @@ quit
           ),
           IconButton(
             icon: const Icon(Icons.backup),
-            tooltip: 'Create Backup',
-            onPressed: _isLoading ? null : _createBackup,
+            tooltip: 'Backup',
+            onPressed: _isLoading ? null : _showBackupRestoreDialog,
           ),
           IconButton(
             icon: const Icon(Icons.save),
