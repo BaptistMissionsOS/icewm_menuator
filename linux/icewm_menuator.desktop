@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=IceWM Menuator
+Comment=A Flutter desktop application for managing IceWM menu files
+Exec=icewm_menuator
+Icon=open-menu-symbolic
+Terminal=false
+Categories=System;Settings;GTK;
+Keywords=icewm;menu;editor;settings;
