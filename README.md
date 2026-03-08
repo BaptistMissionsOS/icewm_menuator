@@ -30,17 +30,15 @@ A Flutter desktop application for managing IceWM menu files with drag-and-drop o
 ## Installation
 
 1. Ensure Flutter is installed and configured for desktop development
-2. Install system dependencies:
-   ```bash
-   sudo apt install psmisc
-   ```
-3. Clone this repository
-4. Run the application:
+2. Clone this repository
+3. Run the application:
    ```bash
    flutter run
    ```
 
 ## Usage
+
+**⚠️ Important**: Always create a backup before making major changes to your menu. Use the backup button (💾) in the toolbar to save your current menu configuration.
 
 1. The app automatically loads your `~/.icewm/menu` file
 2. **Theme Selection**: Click the theme toggle (🌙/☀️) in the top bar to switch between dark and light modes

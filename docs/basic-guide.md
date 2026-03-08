@@ -13,6 +13,19 @@ Welcome to IceWM Menuator! This guide will help you get started with editing you
 
 ## Getting Started
 
+### ⚠️ Important: Backup First
+
+Before making any changes to your menu, **always create a backup**:
+
+1. **Manual Backup**: Click the backup button (💾) in the top toolbar
+2. **Automatic Backup**: The app automatically creates backups when resetting the menu
+3. **Backup Location**: Backups are saved as `~/.icewm/menu.bak`
+
+**Why backup?**
+- Prevent accidental loss of your custom menu configuration
+- Allow quick recovery if something goes wrong
+- Maintain a restore point before major changes
+
 ### Launching the Application
 
 1. **From Terminal**: Navigate to the IceWM Menuator directory and run:
@@ -136,7 +149,25 @@ Enable **Live Updates** (lightning bolt icon) to:
 
 ### Backup
 
-The application automatically creates backups when you reset the menu. You can also manually create backups using the backup button in the toolbar.
+**🔄 Always Backup Before Major Changes**
+
+The application provides multiple ways to protect your menu configuration:
+
+1. **Manual Backup**: Click the backup button (💾) in the toolbar anytime
+2. **Automatic Backup**: Created automatically when:
+   - Resetting the menu
+   - Making major structural changes
+3. **Backup File Location**: `~/.icewm/menu.bak`
+
+**Restoring from Backup**:
+If something goes wrong, you can restore:
+- **Via App**: Use the "Reload File" button after manually copying the backup
+- **Via Terminal**: `cp ~/.icewm/menu.bak ~/.icewm/menu` then restart IceWM
+
+**Best Practices**:
+- Create a backup before scanning applications (in case of duplicates)
+- Backup before major reorganization
+- Keep multiple backups by renaming them with dates
 
 ## Common Tasks
 
