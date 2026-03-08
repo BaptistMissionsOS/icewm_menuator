@@ -505,6 +505,10 @@ quit
             child: const Text('Restore Backup'),
           ),
           TextButton(
+            onPressed: () => Navigator.of(context).pop('manage'),
+            child: const Text('Manage Backups'),
+          ),
+          TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
@@ -515,21 +519,28 @@ quit
     if (result == 'backup') {
       await _createBackup();
     } else if (result == 'restore') {
-      await _restoreBackup();
+      await _showRestoreDialog();
+    } else if (result == 'manage') {
+      await _showManageBackupsDialog();
     }
   }
 
-  /// Create a backup of the current menu
+  /// Create a backup of the current menu with timestamp
   Future<void> _createBackup() async {
     try {
-      final backupFile = File('${_menuFile.path}.bak');
+      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').replaceAll('.', '-');
+      final backupFile = File('${_menuFile.path}.backup.$timestamp');
       await _menuFile.copy(backupFile.path);
+
+      // Also create the simple .bak for compatibility
+      final simpleBackup = File('${_menuFile.path}.bak');
+      await _menuFile.copy(simpleBackup.path);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Backup created: ~/.icewm/menu.bak'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text('Backup created: menu.backup.$timestamp'),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -542,7 +553,225 @@ quit
     }
   }
 
-  /// Restore backup of the current menu
+  /// Get list of all backup files
+  Future<List<FileSystemEntity>> _getBackupFiles() async {
+    try {
+      final menuDir = _menuFile.parent;
+      final files = await menuDir.list().toList();
+      return files.where((file) {
+        final fileName = file.path.split('/').last;
+        return fileName.startsWith('menu.backup.') || fileName == 'menu.bak';
+      }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Show dialog to select and restore from backup
+  Future<void> _showRestoreDialog() async {
+    final backupFiles = await _getBackupFiles();
+    
+    if (backupFiles.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No backup files found'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Sort by modification time (newest first)
+    backupFiles.sort((a, b) {
+      final aStat = a.statSync();
+      final bStat = b.statSync();
+      return bStat.modified.compareTo(aStat.modified);
+    });
+
+    final selectedBackup = await showDialog<File>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Backup to Restore'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: backupFiles.length,
+            itemBuilder: (context, index) {
+              final file = backupFiles[index];
+              final fileName = file.path.split('/').last;
+              final modified = file.statSync().modified;
+              final formattedDate = '${modified.day.toString().padLeft(2, '0')}/'
+                                  '${modified.month.toString().padLeft(2, '0')}/'
+                                  '${modified.year} ${modified.hour.toString().padLeft(2, '0')}:${modified.minute.toString().padLeft(2, '0')}';
+              
+              return ListTile(
+                title: Text(fileName),
+                subtitle: Text('Modified: $formattedDate'),
+                leading: const Icon(Icons.backup),
+                onTap: () => Navigator.of(context).pop(file),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (selectedBackup != null) {
+      await _restoreFromBackup(selectedBackup);
+    }
+  }
+
+  /// Show dialog to manage backups
+  Future<void> _showManageBackupsDialog() async {
+    final backupFiles = await _getBackupFiles();
+    
+    if (backupFiles.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No backup files found'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Sort by modification time (newest first)
+    backupFiles.sort((a, b) {
+      final aStat = a.statSync();
+      final bStat = b.statSync();
+      return bStat.modified.compareTo(aStat.modified);
+    });
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Manage Backups'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Found ${backupFiles.length} backup files:'),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: backupFiles.length,
+                  itemBuilder: (context, index) {
+                    final file = backupFiles[index];
+                    final fileName = file.path.split('/').last;
+                    final modified = file.statSync().modified;
+                    final formattedDate = '${modified.day.toString().padLeft(2, '0')}/'
+                                        '${modified.month.toString().padLeft(2, '0')}/'
+                                        '${modified.year} ${modified.hour.toString().padLeft(2, '0')}:${modified.minute.toString().padLeft(2, '0')}';
+                    
+                    return ListTile(
+                      title: Text(fileName),
+                      subtitle: Text('Modified: $formattedDate'),
+                      leading: const Icon(Icons.backup),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () async {
+                          final shouldDelete = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Backup'),
+                              content: Text('Are you sure you want to delete $fileName?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(true),
+                                  child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                ),
+                              ],
+                            ),
+                          );
+                          
+                          if (shouldDelete == true) {
+                            try {
+                              await file.delete();
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Deleted: $fileName'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                              Navigator.of(context).pop(); // Close manage dialog to refresh
+                              _showManageBackupsDialog(); // Reopen with updated list
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error deleting file: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Restore from a specific backup file
+  Future<void> _restoreFromBackup(File backupFile) async {
+    try {
+      await backupFile.copy(_menuFile.path);
+      await _loadMenuFile();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Restored from: ${backupFile.path.split('/').last}'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error restoring backup: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Restore backup of the current menu (legacy method)
   Future<void> _restoreBackup() async {
     try {
       final backupFile = File('${_menuFile.path}.bak');
