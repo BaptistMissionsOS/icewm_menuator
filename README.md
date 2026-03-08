@@ -7,7 +7,7 @@ A Flutter desktop application for managing IceWM menu files with drag-and-drop o
 - **Visual Menu Editor**: Interactive tree view for organizing menu entries
 - **Drag & Drop**: Move menu entries between menus with visual feedback
 - **Live Updates**: Changes appear immediately in IceWM without manual reloading
-- **Inline Editing**: Double-click submenu names to edit them directly
+- **Context Menu Access**: Double-click submenu names to open options menu
 - **Theme Support**: Toggle between light and dark modes with automatic system theme detection
 - **Smart Application Scanning**: Automatically discovers and organizes desktop applications into categorized directories
 - **Intelligent Organization**: Applications are automatically placed in appropriate directories based on their categories (Multimedia, Development, Office, etc.)
@@ -46,7 +46,7 @@ A Flutter desktop application for managing IceWM menu files with drag-and-drop o
 2. **Theme Selection**: Click the theme toggle (🌙/☀️) in the top bar to switch between dark and light modes
 3. Use the tree view on the left to navigate and select menu entries
 4. Edit entry properties in the right panel
-5. **Inline Editing**: Double-click on submenu names in the tree view to edit them directly
+5. **Context Menu Access**: Double-click on submenu names in the tree view to open options menu
 6. **Smart Scanning**: Click the sparkle icon (✨) to automatically scan and organize all desktop applications into categorized directories
 7. Drag entries to reorganize them between menus
 8. Changes are automatically saved and IceWM is reloaded immediately (when live updates are enabled)
