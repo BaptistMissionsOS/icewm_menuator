@@ -127,8 +127,8 @@ class _IceMenuParserState {
       currentLineIndex++;
       final children = parseLines(currentLineIndex, lines.length);
       
-      // currentLineIndex is now at the closing brace, advance past it
-      currentLineIndex++;
+      // currentLineIndex is now at the closing brace. 
+      // The parent loop will increment it to move to the next line.
 
       return IceSubMenu(
         label: label,

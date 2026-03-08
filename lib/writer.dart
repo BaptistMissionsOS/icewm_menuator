@@ -1,9 +1,11 @@
 import 'models/ice_entry.dart';
+import 'package:flutter/foundation.dart';
 
 /// Serializer for converting IceMenuEntry tree back to IceWM menu format
 class IceMenuWriter {
   /// Default indentation (2 spaces per level)
   static const String _defaultIndent = '  ';
+  static const int _maxDepth = 100; // Safety limit to prevent infinite recursion
 
   /// Serialize a list of menu entries back to IceWM format
   /// Returns a string ready to be written to ~/.icewm/menu
@@ -23,6 +25,12 @@ class IceMenuWriter {
     String indent,
     int depth,
   ) {
+    // Safety check to prevent infinite recursion
+    if (depth > _maxDepth) {
+      debugPrint('IceMenuWriter: Maximum depth exceeded ($_maxDepth). Possible circular reference detected.');
+      return;
+    }
+
     for (final entry in entries) {
       // Skip invisible entries
       if (!entry.isVisible) continue;

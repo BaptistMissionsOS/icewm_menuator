@@ -146,17 +146,26 @@ quit
 
   /// Save the current menu to file
   Future<void> _saveMenuFile() async {
+    debugPrint('=== _saveMenuFile START ===');
     try {
+      debugPrint('Step 1: Serializing menu entries...');
       final content = IceMenuWriter.serialize(_menuEntries);
+      debugPrint('Step 2: Writing menu file to ${_menuFile.path}...');
       await _menuFile.writeAsString(content);
+      debugPrint('Step 3: Menu file written successfully');
 
+      debugPrint('Step 4: Saving applications files...');
       // Save applications files
       await ApplicationsScanner.saveApplications(_menuEntries);
+      debugPrint('Step 5: Applications files saved successfully');
 
+      debugPrint('Step 6: Saving directories files...');
       // Save directories files
       await DirectoriesScanner.saveDirectories(_menuEntries);
+      debugPrint('Step 7: Directories files saved successfully');
 
       if (mounted) {
+        debugPrint('Step 8: Showing success snackbar...');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Menu saved! Reloading IceWM...'),
@@ -168,26 +177,39 @@ quit
           ),
         );
         
+        debugPrint('Step 9: Auto-reloading IceWM menu...');
         // Auto-reload after a short delay
         await Future.delayed(const Duration(milliseconds: 500));
         await _reloadIceWMMenu();
+        debugPrint('Step 10: IceWM menu reload completed');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('=== _saveMenuFile ERROR ===');
+      debugPrint('Error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      debugPrint('=== END ERROR ===');
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error saving menu: $e')),
         );
       }
     }
+    debugPrint('=== _saveMenuFile END ===');
   }
 
   /// Reload IceWM's menu by sending HUP signal
   Future<void> _reloadIceWMMenu() async {
+    if (!mounted) return;
     try {
       // Try to reload IceWM menu with HUP signal
-      final result = await Process.run('killall', ['-HUP', 'icewm']);
+      // The -x flag ensures it matches "icewm" exactly, ignoring "icewm_menuator"
+      debugPrint('_reloadIceWMMenu: Sending HUP signal to icewm process...');
+      final result = await Process.run('pkill', ['-HUP', '-x', 'icewm']);
+      debugPrint('_reloadIceWMMenu: pkill exit code: ${result.exitCode}');
       
       if (result.exitCode == 0) {
+        debugPrint('_reloadIceWMMenu: IceWM reloaded successfully');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -197,7 +219,8 @@ quit
           );
         }
       } else {
-        // If killall fails, just show success anyway (file was saved)
+        debugPrint('_reloadIceWMMenu: IceWM not running or pkill failed: ${result.stderr}');
+        // If pkill fails, just show success anyway (file was saved)
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -208,11 +231,12 @@ quit
         }
       }
     } catch (e) {
+      debugPrint('_reloadIceWMMenu: Failed to run pkill: $e');
       // Error reloading, but file was saved
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Menu saved. Manual reload needed: killall -HUP icewm'),
+            content: Text('Menu saved. Manual reload needed: pkill -HUP -x icewm'),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -270,7 +294,7 @@ quit
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('All applications already exist in menu'),
-              duration: const Duration(seconds: 2),
+              duration: Duration(seconds: 2),
             ),
           );
         }
@@ -331,7 +355,7 @@ quit
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('All directories already exist in menu'),
-              duration: const Duration(seconds: 2),
+              duration: Duration(seconds: 2),
             ),
           );
         }
@@ -820,7 +844,7 @@ quit
           PopupMenuButton<String>(
             icon: const Icon(Icons.auto_awesome),
             tooltip: 'Scan Options',
-            onSelected: (value) {
+            onSelected: _isLoading ? null : (value) {
               switch (value) {
                 case 'applications':
                   _scanApplications();
@@ -844,12 +868,12 @@ quit
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Reset Menu',
-            onPressed: _showResetConfirmation,
+            onPressed: _isLoading ? null : _showResetConfirmation,
           ),
           IconButton(
             icon: const Icon(Icons.flash_on),
             tooltip: _liveUpdateEnabled ? 'Disable Live Updates' : 'Enable Live Updates',
-            onPressed: () {
+            onPressed: _isLoading ? null : () {
               setState(() {
                 _liveUpdateEnabled = !_liveUpdateEnabled;
               });
@@ -864,22 +888,22 @@ quit
           IconButton(
             icon: const Icon(Icons.backup),
             tooltip: 'Create Backup',
-            onPressed: _createBackup,
+            onPressed: _isLoading ? null : _createBackup,
           ),
           IconButton(
             icon: const Icon(Icons.save),
             tooltip: 'Save Menu',
-            onPressed: _saveMenuFile,
+            onPressed: _isLoading ? null : _saveMenuFile,
           ),
           IconButton(
             icon: const Icon(Icons.folder_open),
             tooltip: 'Reload Menu File',
-            onPressed: _showReloadConfirmation,
+            onPressed: _isLoading ? null : _showReloadConfirmation,
           ),
           IconButton(
             icon: const Icon(Icons.restart_alt),
             tooltip: 'Reload IceWM Menu',
-            onPressed: _reloadIceWMMenu,
+            onPressed: _isLoading ? null : _reloadIceWMMenu,
           ),
         ],
       ),

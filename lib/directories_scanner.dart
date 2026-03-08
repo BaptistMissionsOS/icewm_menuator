@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'models/ice_entry.dart';
 
@@ -31,19 +32,36 @@ class DirectoriesScanner {
 
   /// Save user-created directories from menu entries as .directory files
   static Future<void> saveDirectories(List<IceMenuEntry> menuEntries) async {
-    final dirDir = _localDirectoriesDirectory;
-    if (!await dirDir.exists()) {
-      await dirDir.create(recursive: true);
-    }
-
-    final existingDirectoryFiles = <String>{};
-    await for (final entity in dirDir.list()) {
-      if (entity is File && entity.path.endsWith(".directory")) {
-        existingDirectoryFiles.add(path.basename(entity.path));
+    debugPrint('=== DirectoriesScanner.saveDirectories START ===');
+    try {
+      final dirDir = _localDirectoriesDirectory;
+      debugPrint('Directories directory: ${dirDir.path}');
+      
+      if (!await dirDir.exists()) {
+        debugPrint('Creating directories directory...');
+        await dirDir.create(recursive: true);
       }
-    }
 
-    await _saveDirectoriesRecursive(menuEntries, dirDir, existingDirectoryFiles);
+      debugPrint('Scanning existing directory files...');
+      final existingDirectoryFiles = <String>{};
+      await for (final entity in dirDir.list()) {
+        if (entity is File && entity.path.endsWith(".directory")) {
+          existingDirectoryFiles.add(path.basename(entity.path));
+        }
+      }
+      debugPrint('Found ${existingDirectoryFiles.length} existing directory files');
+
+      debugPrint('Starting recursive save...');
+      await _saveDirectoriesRecursive(menuEntries, dirDir, existingDirectoryFiles);
+      debugPrint('Recursive save completed');
+    } catch (e, stackTrace) {
+      debugPrint('=== DirectoriesScanner.saveDirectories ERROR ===');
+      debugPrint('Error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      debugPrint('=== END ERROR ===');
+      rethrow;
+    }
+    debugPrint('=== DirectoriesScanner.saveDirectories END ===');
   }
 
   static Future<void> _saveDirectoriesRecursive(
@@ -51,12 +69,28 @@ class DirectoriesScanner {
     Directory dirDir,
     Set<String> existingDirectoryFiles,
   ) async {
-    for (final entry in entries) {
+    debugPrint('_saveDirectoriesRecursive: Processing ${entries.length} entries');
+    final writtenFiles = <String>{};
+    
+    for (int i = 0; i < entries.length; i++) {
+      final entry = entries[i];
+      debugPrint('_saveDirectoriesRecursive: Processing entry $i: ${entry.runtimeType} - "${entry.label}"');
+      
       if (entry is IceSubMenu) {
-        // Sanitize label for filename
-        final fileName = entry.label.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_').toLowerCase();
-        final directoryFileName = ";$fileName.directory";
-        final filePath = path.join(dirDir.path, directoryFileName);
+        try {
+          // Sanitize label for filename
+          final fileName = entry.label.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_').toLowerCase();
+          final directoryFileName = "$fileName.directory";
+          final filePath = path.join(dirDir.path, directoryFileName);
+          
+          debugPrint('_saveDirectoriesRecursive: Writing directory file: $filePath');
+          debugPrint('_saveDirectoriesRecursive: Label="${entry.label}", Icon="${entry.icon}"');
+
+          // Check if we've already written this file to avoid duplicates
+          if (writtenFiles.contains(directoryFileName)) {
+            debugPrint('_saveDirectoriesRecursive: Skipping duplicate file: $directoryFileName');
+            continue;
+          }
 
           final content = """
 [Desktop Entry]
@@ -66,10 +100,20 @@ Name=${entry.label}
 Icon=${entry.icon}
 """;
           await File(filePath).writeAsString(content);
-      } else if (entry is IceSubMenu) {
-        await _saveDirectoriesRecursive(entry.children, dirDir, existingDirectoryFiles);
+          writtenFiles.add(directoryFileName);
+          debugPrint('_saveDirectoriesRecursive: Directory file written successfully');
+        
+          // Recursively save subdirectories
+          debugPrint('_saveDirectoriesRecursive: Recursing into submenu "${entry.label}" with ${entry.children.length} children');
+          await _saveDirectoriesRecursive(entry.children, dirDir, existingDirectoryFiles);
+        } catch (e, stackTrace) {
+          debugPrint('_saveDirectoriesRecursive: Error writing directory file for "${entry.label}": $e');
+          debugPrint('_saveDirectoriesRecursive: Stack trace: $stackTrace');
+          rethrow;
+        }
       }
     }
+    debugPrint('_saveDirectoriesRecursive: Completed processing entries');
   }
 
 

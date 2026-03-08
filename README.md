@@ -18,10 +18,6 @@ A Flutter desktop application for managing IceWM menu files with drag-and-drop o
 
 ### System Requirements
 - **IceWM**: The window manager this tool manages
-- **psmisc**: Required for menu reloading functionality (`killall` command)
-  ```bash
-  sudo apt install psmisc
-  ```
 
 ### Flutter Dependencies
 - `flutter` (framework)

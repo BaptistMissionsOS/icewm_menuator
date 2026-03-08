@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'models/ice_entry.dart';
 
@@ -35,19 +36,36 @@ class ApplicationsScanner {
 
   /// Save user-created applications from menu entries as .desktop files
   static Future<void> saveApplications(List<IceMenuEntry> menuEntries) async {
-    final appDir = _localApplicationsDirectory;
-    if (!await appDir.exists()) {
-      await appDir.create(recursive: true);
-    }
-
-    final existingDesktopFiles = <String>{};
-    await for (final entity in appDir.list()) {
-      if (entity is File && entity.path.endsWith('.desktop')) {
-        existingDesktopFiles.add(path.basename(entity.path));
+    debugPrint('=== ApplicationsScanner.saveApplications START ===');
+    try {
+      final appDir = _localApplicationsDirectory;
+      debugPrint('Applications directory: ${appDir.path}');
+      
+      if (!await appDir.exists()) {
+        debugPrint('Creating applications directory...');
+        await appDir.create(recursive: true);
       }
-    }
 
-    await _saveApplicationsRecursive(menuEntries, appDir, existingDesktopFiles);
+      debugPrint('Scanning existing desktop files...');
+      final existingDesktopFiles = <String>{};
+      await for (final entity in appDir.list()) {
+        if (entity is File && entity.path.endsWith('.desktop')) {
+          existingDesktopFiles.add(path.basename(entity.path));
+        }
+      }
+      debugPrint('Found ${existingDesktopFiles.length} existing desktop files');
+
+      debugPrint('Starting recursive save...');
+      await _saveApplicationsRecursive(menuEntries, appDir, existingDesktopFiles);
+      debugPrint('Recursive save completed');
+    } catch (e, stackTrace) {
+      debugPrint('=== ApplicationsScanner.saveApplications ERROR ===');
+      debugPrint('Error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      debugPrint('=== END ERROR ===');
+      rethrow;
+    }
+    debugPrint('=== ApplicationsScanner.saveApplications END ===');
   }
 
   static Future<void> _saveApplicationsRecursive(
@@ -55,12 +73,28 @@ class ApplicationsScanner {
     Directory appDir,
     Set<String> existingDesktopFiles,
   ) async {
-    for (final entry in entries) {
+    debugPrint('_saveApplicationsRecursive: Processing ${entries.length} entries');
+    final writtenFiles = <String>{};
+    
+    for (int i = 0; i < entries.length; i++) {
+      final entry = entries[i];
+      debugPrint('_saveApplicationsRecursive: Processing entry $i: ${entry.runtimeType} - "${entry.label}"');
+      
       if (entry is IceProgram) {
-        // Sanitize label for filename
-        final fileName = entry.label.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_').toLowerCase();
-        final desktopFileName = '$fileName.desktop';
-        final filePath = path.join(appDir.path, desktopFileName);
+        try {
+          // Sanitize label for filename
+          final fileName = entry.label.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_').toLowerCase();
+          final desktopFileName = '$fileName.desktop';
+          final filePath = path.join(appDir.path, desktopFileName);
+          
+          debugPrint('_saveApplicationsRecursive: Writing desktop file: $filePath');
+          debugPrint('_saveApplicationsRecursive: Label="${entry.label}", Command="${entry.command}"');
+
+          // Check if we've already written this file to avoid duplicates
+          if (writtenFiles.contains(desktopFileName)) {
+            debugPrint('_saveApplicationsRecursive: Skipping duplicate file: $desktopFileName');
+            continue;
+          }
 
           final content = """
 [Desktop Entry]
@@ -72,10 +106,19 @@ Icon=${entry.icon}
 Terminal=false
 """;
           await File(filePath).writeAsString(content);
+          writtenFiles.add(desktopFileName);
+          debugPrint('_saveApplicationsRecursive: Desktop file written successfully');
+        } catch (e, stackTrace) {
+          debugPrint('_saveApplicationsRecursive: Error writing desktop file for "${entry.label}": $e');
+          debugPrint('_saveApplicationsRecursive: Stack trace: $stackTrace');
+          rethrow;
+        }
       } else if (entry is IceSubMenu) {
+        debugPrint('_saveApplicationsRecursive: Recursing into submenu "${entry.label}" with ${entry.children.length} children');
         await _saveApplicationsRecursive(entry.children, appDir, existingDesktopFiles);
       }
     }
+    debugPrint('_saveApplicationsRecursive: Completed processing entries');
   }
 
   static const List<String> _applicationPaths = [
