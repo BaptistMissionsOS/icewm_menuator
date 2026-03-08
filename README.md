@@ -69,6 +69,20 @@ The application scans for desktop files in standard locations and organizes them
 
 Scanning automatically avoids duplicates by checking existing menu entries before adding new ones.
 
+## Documentation
+
+For detailed guides and troubleshooting, see the [docs/](docs/) directory:
+
+- **[Basic User Guide](docs/basic-guide.md)** - Getting started, basic operations, and common tasks
+- **[Advanced User Guide](docs/advanced-guide.md)** - Power features, customization, automation, and technical details
+- **[Troubleshooting Guide](docs/troubleshooting.md)** - Common issues and solutions
+
+### Quick Start
+
+1. **New Users**: Read the [Basic User Guide](docs/basic-guide.md#getting-started)
+2. **Installation Issues**: Check the [Troubleshooting Guide](docs/troubleshooting.md#installation-issues)
+3. **Advanced Features**: See the [Advanced User Guide](docs/advanced-guide.md)
+
 ## Development
 
 This project uses Flutter for desktop Linux applications. To contribute:

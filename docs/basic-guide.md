@@ -1,0 +1,173 @@
+# IceWM Menuator - Basic User Guide
+
+Welcome to IceWM Menuator! This guide will help you get started with editing your IceWM menu using this user-friendly desktop application.
+
+## Table of Contents
+
+1. [Getting Started](#getting-started)
+2. [Basic Operations](#basic-operations)
+3. [Managing Menu Entries](#managing-menu-entries)
+4. [Saving and Reloading](#saving-and-reloading)
+5. [Common Tasks](#common-tasks)
+
+## Getting Started
+
+### Launching the Application
+
+1. **From Terminal**: Navigate to the IceWM Menuator directory and run:
+   ```bash
+   flutter run -d linux
+   ```
+
+2. **Built Application**: If you have a built version, simply run the executable from your application menu.
+
+### First Run
+
+When you first launch IceWM Menuator, it will:
+- Automatically locate your `~/.icewm/menu` file
+- Create the file if it doesn't exist with a basic template
+- Load your current menu structure
+
+## Basic Operations
+
+### Understanding the Interface
+
+The application window is divided into two main panels:
+
+- **Left Panel (Menu Tree)**: Shows your menu structure in a hierarchical view
+- **Right Panel (Entry Editor)**: Allows you to edit the selected menu entry
+
+### Navigation
+
+- **Click on any menu entry** to select it and see its details in the editor
+- **Click the same entry again** to deselect it
+- **Use the arrow buttons** in the editor to move entries up or down
+
+## Managing Menu Entries
+
+### Adding New Entries
+
+1. Click the **Add Entry** button in the editor panel
+2. Choose the entry type:
+   - **Program**: An application launcher
+   - **Directory**: A submenu container
+   - **Separator**: A visual divider line
+   - **Restart**: IceWM restart option
+   - **Quit**: IceWM quit option
+
+### Editing Programs
+
+For program entries, you can set:
+- **Label**: The name displayed in the menu
+- **Icon**: Path to icon file (or leave empty for default)
+- **Command**: The actual command to execute
+
+**Example Program Entry:**
+- Label: `Firefox`
+- Icon: `/usr/share/pixmaps/firefox.png`
+- Command: `firefox`
+
+### Editing Directories
+
+For directory entries (submenus), you can set:
+- **Label**: The directory name shown in the menu
+- **Icon**: Path to icon file (defaults to folder icon)
+
+### Deleting Entries
+
+1. Select the entry you want to delete
+2. Click the **Delete** button in the editor panel
+3. Confirm the deletion
+
+**Note**: Generated entries (from scanning) will be hidden rather than deleted.
+
+## Saving and Reloading
+
+### Manual Save
+
+1. Click the **Save** button (floppy disk icon) in the toolbar
+2. The application will:
+   - Save your menu to `~/.icewm/menu`
+   - Automatically reload IceWM to apply changes
+   - Show a success message
+
+### Live Updates
+
+Enable **Live Updates** (lightning bolt icon) to:
+- Automatically save changes as you make them
+- Instantly reload IceWM menu
+- See changes immediately in your IceWM menu
+
+### Backup
+
+The application automatically creates backups when you reset the menu. You can also manually create backups using the backup button in the toolbar.
+
+## Common Tasks
+
+### Adding a New Application
+
+1. Click **Add Entry** → **Program**
+2. Fill in the details:
+   - Label: Application name
+   - Icon: Path to icon (optional)
+   - Command: Command to run the application
+3. Click **Save**
+
+### Creating a Submenu
+
+1. Click **Add Entry** → **Directory**
+2. Set the directory name and icon
+3. Add entries to this directory by:
+   - Selecting the directory
+   - Clicking **Add Sub-Directory** in the editor
+   - Or dragging existing entries into the directory
+
+### Organizing with Drag & Drop
+
+1. Click and hold any menu entry
+2. Drag it to:
+   - Another directory to move it inside
+   - The root level to make it a top-level entry
+3. Release to drop the entry in its new location
+
+### Reordering Entries
+
+1. Select any entry
+2. Use the **Up/Down** arrows in the editor panel
+3. Changes are saved automatically if Live Updates is enabled
+
+### Scanning for Applications
+
+1. Click the **scan icon** (auto-awesome) in the toolbar
+2. Select **Scan Applications** to find all desktop applications
+3. New applications will be added to an "Other" directory
+4. Review and organize them as needed
+
+## Tips
+
+- **Use Live Updates** for immediate feedback
+- **Create backups** before making major changes
+- **Scan applications** to quickly populate your menu
+- **Use separators** to organize related items
+- **Test commands** in terminal first if unsure
+
+## Getting Help
+
+If you run into issues:
+1. Check the [Troubleshooting Guide](troubleshooting.md)
+2. Look at the [Advanced User Guide](advanced.md) for complex features
+3. Enable debug output by running from terminal to see detailed logs
+
+## Keyboard Shortcuts
+
+- **Ctrl+S**: Save menu
+- **Ctrl+R**: Reload IceWM menu
+- **Delete**: Delete selected entry
+- **Escape**: Clear selection
+
+## File Locations
+
+- **Menu File**: `~/.icewm/menu`
+- **Backup File**: `~/.icewm/menu.bak`
+- **Applications**: Stored in `~/.icewm/applications/`
+- **Directories**: Stored in `~/.icewm/directories/`
