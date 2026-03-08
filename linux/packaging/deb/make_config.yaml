@@ -1,0 +1,32 @@
+display_name: IceWM Menuator
+package_name: icewm-menuator
+maintainer:
+  name: BaptistMissionsOS
+  email: baptistmissionsos@gmail.com
+priority: optional
+section: x11
+installed_size: 6604
+essential: false
+icon: assets/logo.png
+
+postinstall_scripts:
+  - echo "Installed IceWM Menuator"
+postuninstall_scripts:
+  - echo "Uninstalled IceWM Menuator"
+
+keywords:
+  - IceWM
+  - Menu
+  - Configuration
+  - Tool
+
+generic_name: IceWM Menuator
+
+categories:
+  - Utility
+  - Development
+
+startup_notify: true
+# You can also specify [metainfo](https://freedesktop.org/software/appstream/docs/chap-Quickstart.html) file
+# which contains metadata of the app.
+# metainfo: linux/packaging/myappid.appdata.xml
